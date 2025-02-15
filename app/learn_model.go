@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+type LearnModelSolvedMsg struct {
+	SolvedCount int
+}
+
 type LearnModel struct {
 	// active is the currently active SynonymGroup
 	active SynonymGroup
@@ -25,22 +29,28 @@ type LearnModel struct {
 // From those synonyms, a single word is chosen as start word, show to the user
 // as initial hint for what synonyms are being searched.
 func NewLearnModel(synonyms SynonymGroup) LearnModel {
+	startWord := synonyms[0]
+
 	ti := textinput.New()
-	ti.Placeholder = "New word"
+	ti.Placeholder = "Enter a synonym for: " + startWord
 	ti.Focus()
 	ti.CharLimit = 156
 
 	return LearnModel{
 		active:    synonyms[1:],
 		solved:    make(SynonymGroup, 0),
-		startWord: synonyms[0], // TODO: Choose random start word - fix the slicing of synonyms above too
+		startWord: startWord, // TODO: Choose random start word - fix the slicing of synonyms above too
 		inputHint: "",
 		input:     ti,
 	}
 }
 
-func (m LearnModel) IsSolving() bool {
-	return m.active != nil && len(m.active) > len(m.solved)
+func (m LearnModel) IsUnsolved() bool {
+	return len(m.active) > len(m.solved)
+}
+
+func (m LearnModel) IsSolved() bool {
+	return len(m.active) == len(m.solved)
 }
 
 func (m LearnModel) isUnsolvedSynonym(s string) bool {
@@ -61,9 +71,18 @@ func (m LearnModel) isUnsolvedSynonym(s string) bool {
 	return false
 }
 
-func (m LearnModel) solve(s string) LearnModel {
+func (m LearnModel) solve(s string) (LearnModel, tea.Cmd) {
+	m.inputHint = "Correct"
 	m.solved = append(m.solved, s)
-	return m
+	if m.IsSolved() {
+		return m, tea.Cmd(func() tea.Msg {
+			return LearnModelSolvedMsg{
+				SolvedCount: len(m.solved),
+			}
+		})
+	} else {
+		return m, nil
+	}
 }
 
 func (m LearnModel) Init() tea.Cmd {
@@ -76,13 +95,12 @@ func (m LearnModel) Update(msg tea.Msg) (LearnModel, tea.Cmd) {
 		switch msg.String() {
 		// Confirm
 		case "enter":
-			if m.IsSolving() {
+			if m.IsUnsolved() {
 				// Handle the input typed by the user
 				input := m.input.Value()
 				m.input.SetValue("")
 				if m.isUnsolvedSynonym(input) {
-					m.inputHint = "Correct"
-					return m.solve(input), nil
+					return m.solve(input)
 				} else {
 					m.inputHint = "Incorrect"
 					return m, nil

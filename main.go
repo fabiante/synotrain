@@ -27,7 +27,11 @@ type Model struct {
 	// to ensure no expansive deep copy is done when copying the model.
 	data *Data
 
+	solvedCount int
+
 	learnModel app.LearnModel
+
+	debug string
 }
 
 func NewModel(data *Data) Model {
@@ -44,13 +48,14 @@ func (m Model) startLearn() (Model, tea.Cmd) {
 }
 
 func (m Model) Init() tea.Cmd {
-	return nil
+	return tea.ClearScreen
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case app.LearnModelSolvedMsg:
+		m.solvedCount += msg.SolvedCount
 	case tea.KeyMsg:
-
 		switch msg.String() {
 		// Solve new synonym group
 		case "ctrl+t":
@@ -71,10 +76,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	var sb strings.Builder
 
-	sb.WriteString("(ctrl+t = solve new synonym group) (ctrl+c = quit)\n\n")
+	sb.WriteString("(ctrl+t = solve new synonym group) (ctrl+c = quit)\n")
 
-	if m.learnModel.IsSolving() {
+	if m.learnModel.IsUnsolved() {
 		sb.WriteString(m.learnModel.View())
+	} else {
+		if m.solvedCount > 0 {
+			sb.WriteString(fmt.Sprintf("Today you have learned %v synonyms\n\n", m.solvedCount))
+		} else {
+			sb.WriteString("Let's learn some synonyms!\n\n")
+		}
+	}
+
+	if m.debug != "" {
+		sb.WriteString(m.debug)
+		sb.WriteString("\n")
 	}
 
 	return sb.String()
