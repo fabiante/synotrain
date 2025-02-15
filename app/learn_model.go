@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"strings"
@@ -22,6 +23,9 @@ type LearnModel struct {
 
 	inputHint string
 	input     textinput.Model
+
+	progressPercent float64
+	progress        progress.Model
 }
 
 // NewLearnModel creates a new LearnModel using the given SynonymGroup.
@@ -42,6 +46,7 @@ func NewLearnModel(synonyms SynonymGroup) LearnModel {
 		startWord: startWord, // TODO: Choose random start word - fix the slicing of synonyms above too
 		inputHint: "",
 		input:     ti,
+		progress:  progress.New(),
 	}
 }
 
@@ -74,6 +79,8 @@ func (m LearnModel) isUnsolvedSynonym(s string) bool {
 func (m LearnModel) solve(s string) (LearnModel, tea.Cmd) {
 	m.inputHint = "Correct"
 	m.solved = append(m.solved, s)
+	m.progressPercent = float64(len(m.solved)) / float64(len(m.active))
+
 	if m.IsSolved() {
 		return m, tea.Cmd(func() tea.Msg {
 			return LearnModelSolvedMsg{
@@ -127,6 +134,8 @@ func (m LearnModel) View() string {
 
 	sb.WriteString("You have found: ")
 	sb.WriteString(strings.Join(m.solved, " "))
+	sb.WriteString("\n\n")
+	sb.WriteString(m.progress.ViewAs(m.progressPercent))
 	sb.WriteString("\n\n")
 
 	sb.WriteString(m.input.View())

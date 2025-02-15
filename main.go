@@ -76,7 +76,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	var sb strings.Builder
 
-	sb.WriteString("(ctrl+t = solve new synonym group) (ctrl+c = quit)\n")
+	sb.WriteString("(ctrl+t = solve new synonym group) (ctrl+c = quit)\n\n")
 
 	if m.learnModel.IsUnsolved() {
 		sb.WriteString(m.learnModel.View())
