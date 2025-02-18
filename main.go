@@ -8,24 +8,10 @@ import (
 	"strings"
 )
 
-type Data struct {
-	Synonyms []app.SynonymGroup
-}
-
-func NewData() *Data {
-	return &Data{
-		Synonyms: make([][]string, 0),
-	}
-}
-
-func ExampleSynonyms() app.SynonymGroup {
-	return []string{"schön", "attraktiv", "bezaubernd", "charmant", "anziehend"}
-}
-
 type Model struct {
 	// data contains the overall program data. This is a pointer value
 	// to ensure no expansive deep copy is done when copying the model.
-	data *Data
+	data *app.Data
 
 	solvedCount int
 
@@ -34,7 +20,7 @@ type Model struct {
 	debug string
 }
 
-func NewModel(data *Data) Model {
+func NewModel(data *app.Data) Model {
 	return Model{
 		data:       data,
 		learnModel: app.LearnModel{},
@@ -97,8 +83,8 @@ func (m Model) View() string {
 }
 
 func main() {
-	data := NewData()
-	data.Synonyms = append(data.Synonyms, ExampleSynonyms())
+	data := app.NewData()
+	data.Synonyms = append(data.Synonyms, app.ExampleSynonyms())
 	p := tea.NewProgram(NewModel(data))
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
