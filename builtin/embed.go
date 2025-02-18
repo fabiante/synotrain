@@ -16,6 +16,7 @@ func Get(path string) ([]byte, error) {
 }
 
 type synonymResource struct {
+	Desc     string
 	Synonyms app.SynonymGroup
 }
 
