@@ -4,6 +4,8 @@ import (
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fabiante/synotrain/app"
+	"github.com/fabiante/synotrain/builtin"
+	"math/rand/v2"
 	"os"
 	"strings"
 )
@@ -28,7 +30,9 @@ func NewModel(data *app.Data) Model {
 }
 
 func (m Model) startLearn() (Model, tea.Cmd) {
-	synonyms := m.data.Synonyms[0] // TODO: Use random
+	// Select a random synonym group
+	i := rand.IntN(len(m.data.Synonyms)) // TODO: Take into account if group was previously learned
+	synonyms := m.data.Synonyms[i]
 	m.learnModel = app.NewLearnModel(synonyms)
 	return m, m.learnModel.Init()
 }
@@ -83,8 +87,7 @@ func (m Model) View() string {
 }
 
 func main() {
-	data := app.NewData()
-	data.Synonyms = append(data.Synonyms, app.ExampleSynonyms())
+	data := builtin.Data()
 	p := tea.NewProgram(NewModel(data))
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
