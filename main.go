@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/fabiante/synotrain/app"
-	"github.com/fabiante/synotrain/builtin"
 	"math/rand/v2"
 	"os"
 	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/fabiante/synotrain/app"
+	"github.com/fabiante/synotrain/builtin"
 )
 
 type Model struct {
@@ -17,15 +18,14 @@ type Model struct {
 
 	solvedCount int
 
-	learnModel app.LearnModel
+	childModel tea.Model
 
 	debug string
 }
 
 func NewModel(data *app.Data) Model {
 	return Model{
-		data:       data,
-		learnModel: app.LearnModel{},
+		data: data,
 	}
 }
 
@@ -33,8 +33,10 @@ func (m Model) startLearn() (Model, tea.Cmd) {
 	// Select a random synonym group
 	i := rand.IntN(len(m.data.Synonyms)) // TODO: Take into account if group was previously learned
 	synonyms := m.data.Synonyms[i]
-	m.learnModel = app.NewLearnModel(synonyms)
-	return m, m.learnModel.Init()
+
+	// Create a child model
+	m.childModel = app.NewLearnModel(synonyms)
+	return m, m.childModel.Init()
 }
 
 func (m Model) Init() tea.Cmd {
@@ -45,6 +47,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case app.LearnModelSolvedMsg:
 		m.solvedCount += msg.SolvedCount
+		m.childModel = nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		// Solve new synonym group
@@ -56,21 +59,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	// Pass on input to the learn model
-	var cmd tea.Cmd
-	m.learnModel, cmd = m.learnModel.Update(msg)
+	// Pass on input to the child model
+	if m.childModel != nil {
+		var cmd tea.Cmd
+		m.childModel, cmd = m.childModel.Update(msg)
+		return m, cmd
+	}
 
-	return m, cmd
+	return m, nil
 }
 
 func (m Model) View() string {
 	var sb strings.Builder
 
-	sb.WriteString("(ctrl+t = solve new synonym group) (ctrl+c = quit)\n\n")
-
-	if m.learnModel.IsUnsolved() {
-		sb.WriteString(m.learnModel.View())
+	// Show child model or main view
+	if m.childModel != nil {
+		sb.WriteString(m.childModel.View())
 	} else {
+		sb.WriteString("(ctrl+t = solve new synonym group) (ctrl+c = quit)\n\n")
+
 		if m.solvedCount > 0 {
 			sb.WriteString(fmt.Sprintf("Today you have learned %v synonyms\n\n", m.solvedCount))
 		} else {
