@@ -2,10 +2,11 @@ package app
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"strings"
 )
 
 type LearnModelSolvedMsg struct {
@@ -13,11 +14,10 @@ type LearnModelSolvedMsg struct {
 }
 
 type LearnModel struct {
-	// active is the currently active SynonymGroup
-	active SynonymGroup
-
-	// solved contains the synonyms from active which the user has correctly typed in.
-	solved SynonymGroup
+	// synonyms contains the synonyms which the user must type in.
+	synonyms []string
+	// solved contains the synonyms which the user has correctly typed in.
+	solved []string
 
 	startWord string
 
@@ -33,7 +33,7 @@ type LearnModel struct {
 // From those synonyms, a single word is chosen as start word, show to the user
 // as initial hint for what synonyms are being searched.
 func NewLearnModel(synonyms SynonymGroup) LearnModel {
-	startWord := synonyms[0]
+	startWord := synonyms.Synonyms[0]
 
 	ti := textinput.New()
 	ti.Placeholder = "Enter a synonym for: " + startWord
@@ -41,8 +41,8 @@ func NewLearnModel(synonyms SynonymGroup) LearnModel {
 	ti.CharLimit = 156
 
 	return LearnModel{
-		active:    synonyms[1:],
-		solved:    make(SynonymGroup, 0),
+		synonyms:  synonyms.Synonyms[1:],
+		solved:    make([]string, 0),
 		startWord: startWord, // TODO: Choose random start word - fix the slicing of synonyms above too
 		inputHint: "",
 		input:     ti,
@@ -51,16 +51,16 @@ func NewLearnModel(synonyms SynonymGroup) LearnModel {
 }
 
 func (m LearnModel) IsUnsolved() bool {
-	return len(m.active) > len(m.solved)
+	return len(m.synonyms) > len(m.solved)
 }
 
 func (m LearnModel) IsSolved() bool {
-	return len(m.active) == len(m.solved)
+	return len(m.synonyms) == len(m.solved)
 }
 
 func (m LearnModel) isUnsolvedSynonym(s string) bool {
 	// Check if s is a synonym
-	for _, synonym := range m.active {
+	for _, synonym := range m.synonyms {
 		if strings.EqualFold(s, synonym) {
 			// Check if synonym is unsolved
 			for _, solved := range m.solved {
@@ -79,7 +79,7 @@ func (m LearnModel) isUnsolvedSynonym(s string) bool {
 func (m LearnModel) solve(s string) (LearnModel, tea.Cmd) {
 	m.inputHint = "Correct"
 	m.solved = append(m.solved, s)
-	m.progressPercent = float64(len(m.solved)) / float64(len(m.active))
+	m.progressPercent = float64(len(m.solved)) / float64(len(m.synonyms))
 
 	if m.IsSolved() {
 		return m, tea.Cmd(func() tea.Msg {
@@ -126,7 +126,7 @@ func (m LearnModel) Update(msg tea.Msg) (LearnModel, tea.Cmd) {
 func (m LearnModel) View() string {
 	var sb strings.Builder
 
-	activeLen := len(m.active)
+	activeLen := len(m.synonyms)
 	sb.WriteString(fmt.Sprintf("Synonym group has %v synonyms - %v remaining\n", activeLen, activeLen-len(m.solved)))
 	sb.WriteString("Find synonyms for: ")
 	sb.WriteString(m.startWord)
