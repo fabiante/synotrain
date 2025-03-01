@@ -6,6 +6,6 @@ type Data struct {
 
 func NewData() *Data {
 	return &Data{
-		Synonyms: make([][]string, 0),
+		Synonyms: make([]SynonymGroup, 0),
 	}
 }

@@ -5,6 +5,8 @@ go 1.24.0
 require (
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.3.3
+	github.com/matryer/is v1.4.1
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
