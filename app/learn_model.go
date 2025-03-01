@@ -96,7 +96,7 @@ func (m LearnModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (m LearnModel) Update(msg tea.Msg) (LearnModel, tea.Cmd) {
+func (m LearnModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
